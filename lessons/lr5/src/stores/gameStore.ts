@@ -13,6 +13,7 @@ class GameStore {
   currentQuestionIndex = 0;
   score = 0;
   selectedAnswers: number[] = [];
+  text: string = ""
   answeredQuestions: LocalAnswer[] = [];
 
   constructor() {
@@ -24,6 +25,7 @@ class GameStore {
     this.currentQuestionIndex = 0;
     this.selectedAnswers = [];
     this.answeredQuestions = [];
+    this.text = "";
     this.score = 0;
   }
 
@@ -74,6 +76,7 @@ class GameStore {
     this.questions = [];
     this.currentQuestionIndex = 0;
     this.score = 0;
+    this.text = "";
     this.selectedAnswers = [];
     this.answeredQuestions = [];
   }

@@ -10,6 +10,7 @@ import {
 
 const Task4 = observer(() => {
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [textAnswer, setTextAnswer] = useState<string>("");
 
   const createSession = usePostApiSessions();
   const submitAnswer = usePostApiSessionsSessionIdAnswers();
@@ -28,6 +29,7 @@ const Task4 = observer(() => {
   } = gameStore;
 
   const theme = useUIStore((s) => s.theme);
+  
 
   const bgGradient =
     theme === "light"
@@ -39,6 +41,8 @@ const Task4 = observer(() => {
   const primary = "bg-purple-600 hover:bg-purple-700";
 
   const handleStartGame = () => {
+    setTextAnswer("");
+    
     createSession.mutate(
     {
       data: {
@@ -60,7 +64,8 @@ const Task4 = observer(() => {
   };
 
   const handleNextQuestion = () => {
-    if (sessionId && currentQuestion && selectedAnswers.length > 0) {
+    // debugger;
+    if (sessionId && currentQuestion && (selectedAnswers.length > 0 || textAnswer.length > 0)) {
     gameStore.saveCurrentAnswer();
     submitAnswer.mutate(
       {
@@ -68,6 +73,7 @@ const Task4 = observer(() => {
         data: {
           questionId: currentQuestion.id.toString(),
           selectedOptions: selectedAnswers,
+          text: textAnswer,
         },
       },
       {
@@ -76,10 +82,12 @@ const Task4 = observer(() => {
             const isCorrect = response.status === 'correct';
           }
           gameStore.nextQuestion();
+          setTextAnswer("");
         },
         onError: (error) => {
           console.error('Failed to submit answer:', error);
           gameStore.nextQuestion();
+          setTextAnswer("");
         },
       }
     );
@@ -160,7 +168,7 @@ const Task4 = observer(() => {
     );
   }
 
-  if (!currentQuestion || !currentQuestion.options) {
+  if (!currentQuestion) {
     return <div>Загрузка вопроса...</div>;
   }
 
@@ -187,7 +195,26 @@ const Task4 = observer(() => {
             {currentQuestion.question}
           </h2>
 
-          <div className="space-y-4">
+          {currentQuestion.type === 'essay' && <div>{'Здесь должна быть форма для ввода текстового ответа'}
+            <textarea
+            value={textAnswer}
+            onChange={(e) => setTextAnswer(e.target.value)}
+            placeholder="Введите ваш ответ"
+            className={`w-full h-24 p-2 border rounded-md ${mutedText}`}
+          />
+
+          {textAnswer.length > 0 && (
+            <button
+              onClick={gameStore.isLastQuestion ? handleFinishGame : handleNextQuestion}
+              disabled={submitAnswer.isPending || submitSession.isPending}
+              className={`${primary} text-white py-2 rounded-xl font-bold mt-4 w-full`}
+            >
+              {gameStore.isLastQuestion ? 'Завершить' : 'Следующий вопрос'}
+            </button>
+)}
+            </div>}
+
+          {currentQuestion.options && <div className="space-y-4">
             {currentQuestion.options.map((option, index) => {
               const isSelected = selectedAnswers.includes(index);
 
@@ -226,12 +253,13 @@ const Task4 = observer(() => {
                 </button>
               );
             })}
-          </div>
+          </div>}
 
           {selectedAnswers.length > 0 && (
             <button
               onClick={gameStore.isLastQuestion ? handleFinishGame : handleNextQuestion}
               disabled={submitAnswer.isPending || submitSession.isPending}
+              className={`${primary} text-white py-2 rounded-xl font-bold mt-4 w-full`}
             >
               {gameStore.isLastQuestion ? 'Завершить' : 'Следующий вопрос'}
             </button>

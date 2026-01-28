@@ -13,6 +13,7 @@ interface UIStore {
   theme: Theme;
   // TODO: Добавьте другие UI-состояния (soundEnabled)
   soundEnabled: boolean;
+  
 
   // Actions
   setTheme: (theme: Theme) => void;
