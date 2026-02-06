@@ -2,6 +2,10 @@ import { observer } from "mobx-react-lite";
 import { gameStore } from "../stores/gameStore";
 import { useUIStore } from "../stores/uiStore";
 import { useState } from "react";
+import { QuizButton } from '../components/quiz/QuizButton';
+import { QuizProgress } from '../components/quiz/QuizProgress';
+import { MultipleSelectQuestion } from '../components/quiz/MultipleSelectQuestion';
+import { EssayQuestion } from '../components/quiz/EssayQuestion';
 import {
   usePostApiSessions,
   usePostApiSessionsSessionIdAnswers,
@@ -29,7 +33,6 @@ const Task4 = observer(() => {
   } = gameStore;
 
   const theme = useUIStore((s) => s.theme);
-  
 
   const bgGradient =
     theme === "light"
@@ -114,23 +117,16 @@ const Task4 = observer(() => {
   }
 };
 
-  if (gameStatus === "idle") {
+  const canProceed = currentQuestion?.type === 'multiple-select'
+    ? gameStore.selectedAnswers.length > 0
+    : gameStore.text.trim().length >= (currentQuestion?.minLength || 0);
+
+  if (!gameStore.isPlaying) {
     return (
-      <div
-        className={`min-h-screen bg-gradient-to-br ${bgGradient} flex items-center justify-center p-4`}
-      >
-        <div className={`${cardBg} rounded-2xl shadow-2xl p-8 max-w-md w-full`}>
-          <h1 className={`text-4xl font-bold text-center mb-8 ${textColor}`}>
-            Quiz Game
-          </h1>
-          <button
-            onClick={handleStartGame}
-            disabled={createSession.isPending}
-            className={`w-full ${primary} text-white py-4 rounded-xl font-bold`}
-          >
-            {createSession.isPending ? "Загрузка..." : "Начать игру"}
-          </button>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <QuizButton onClick={handleStartGame}>
+          Начать игру
+        </QuizButton>
       </div>
     );
   }
@@ -168,103 +164,56 @@ const Task4 = observer(() => {
     );
   }
 
-  if (!currentQuestion) {
-    return <div>Загрузка вопроса...</div>;
-  }
+  if (!currentQuestion) return null;
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${bgGradient} p-4`}>
-      <div className="max-w-2xl mx-auto">
-        <div className={`${cardBg} rounded-lg p-4 mb-6`}>
-          <div className="flex justify-between mb-2">
-            <span className={mutedText}>
-              Вопрос {currentQuestionIndex + 1} / {questions.length}
-            </span>
-            <span className="font-bold text-purple-600">Счёт: {score}</span>
-          </div>
-          <div className="w-full bg-gray-300 rounded-full h-3">
-            <div
-              className="bg-purple-600 h-3 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+    <div className="max-w-2xl mx-auto p-6">
+      <QuizProgress
+        current={gameStore.currentQuestionIndex}
+        total={gameStore.questions.length}
+      />
+
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold mb-4">{currentQuestion.question}</h2>
+
+        <div className="flex gap-4 mb-6 text-sm">
+          <span className="px-3 py-1 bg-gray-100 rounded">
+            Тип: {currentQuestion.type}
+          </span>
+          <span className="px-3 py-1 bg-yellow-100 rounded">
+            Сложность: {currentQuestion.difficulty}
+          </span>
+          <span className="px-3 py-1 bg-green-100 rounded">
+            Баллов: {currentQuestion.maxPoints}
+          </span>
         </div>
 
-        <div className={`${cardBg} rounded-2xl shadow-2xl p-8`}>
-          <h2 className={`text-2xl font-bold mb-8 ${textColor}`}>
-            {currentQuestion.question}
-          </h2>
-
-          {currentQuestion.type === 'essay' && <div>{'Здесь должна быть форма для ввода текстового ответа'}
-            <textarea
-            value={textAnswer}
-            onChange={(e) => setTextAnswer(e.target.value)}
-            placeholder="Введите ваш ответ"
-            className={`w-full h-24 p-2 border rounded-md ${mutedText}`}
+        {currentQuestion.type === 'multiple-select' && (
+          <MultipleSelectQuestion
+            question={currentQuestion}
+            selectedAnswers={gameStore.selectedAnswers}
+            onToggleAnswer={(index) => gameStore.toggleAnswer(index)}
           />
+        )}
 
-          {textAnswer.length > 0 && (
-            <button
+        {currentQuestion.type === 'essay' && (
+          <EssayQuestion
+            question={currentQuestion}
+            textAnswer={gameStore.text}
+            onTextChange={(text) => gameStore.setTextAnswer(text)}
+          />
+        )}
+
+        {canProceed && (
+          <div className="mt-6">
+            <QuizButton
               onClick={gameStore.isLastQuestion ? handleFinishGame : handleNextQuestion}
               disabled={submitAnswer.isPending || submitSession.isPending}
-              className={`${primary} text-white py-2 rounded-xl font-bold mt-4 w-full`}
             >
               {gameStore.isLastQuestion ? 'Завершить' : 'Следующий вопрос'}
-            </button>
-)}
-            </div>}
-
-          {currentQuestion.options && <div className="space-y-4">
-            {currentQuestion.options.map((option, index) => {
-              const isSelected = selectedAnswers.includes(index);
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => gameStore.toggleAnswer(index)}
-                  className={`
-        w-full p-6 text-left rounded-2xl border-2 transition-all duration-300
-        flex items-center gap-5 text-lg font-medium cursor-pointer select-none
-        ${
-          isSelected
-            ? "border-purple-500 bg-purple-50 dark:bg-purple-900/40 shadow-lg shadow-purple-500/20"
-            : "border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-        }
-      `}
-                >
-                  {/* Круг: либо буква, либо галочка */}
-                  <div
-                    className={`
-          w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold
-          transition-all duration-300 flex-shrink-0
-          ${
-            isSelected
-              ? "bg-purple-600 text-white shadow-md"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-          }
-        `}
-                  >
-                    {isSelected ? '✓' : String.fromCharCode(65 + index)}
-                  </div>
-
-                  <span className={`${textColor} leading-relaxed`}>
-                    {option}
-                  </span>
-                </button>
-              );
-            })}
-          </div>}
-
-          {selectedAnswers.length > 0 && (
-            <button
-              onClick={gameStore.isLastQuestion ? handleFinishGame : handleNextQuestion}
-              disabled={submitAnswer.isPending || submitSession.isPending}
-              className={`${primary} text-white py-2 rounded-xl font-bold mt-4 w-full`}
-            >
-              {gameStore.isLastQuestion ? 'Завершить' : 'Следующий вопрос'}
-            </button>
-)}
-        </div>
+            </QuizButton>
+          </div>
+        )}
       </div>
     </div>
   );

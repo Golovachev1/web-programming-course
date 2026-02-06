@@ -1,6 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import type { QuestionPreview } from "../../generated/api/quizBattleAPI.schemas";
 
+
 export interface LocalAnswer {
   questionId: string | number;
   selectedAnswers: number[];
@@ -15,6 +16,8 @@ class GameStore {
   selectedAnswers: number[] = [];
   text: string = ""
   answeredQuestions: LocalAnswer[] = [];
+  isPlaying: boolean = true;
+  
 
   constructor() {
     makeAutoObservable(this);
@@ -29,6 +32,10 @@ class GameStore {
     this.score = 0;
   }
 
+  setTextAnswer = (answer: string) => {
+    this.text = answer
+  };
+  
   toggleAnswer(answerIndex: number) {
     if (this.gameStatus !== "playing") return;
 

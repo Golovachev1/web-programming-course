@@ -4,6 +4,8 @@ export interface Question {
   options: string[];
   correctAnswer: number;
   difficulty: 'easy' | 'medium' | 'hard';
+  minLength?: number;
+  maxLength?: number;
 }
 
 export interface Answer {
