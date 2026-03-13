@@ -9,8 +9,10 @@ export interface Question {
 
 export interface Answer {
   questionId: string;
-  selectedAnswers: number[];
+  selectedAnswers?: number[];
   isCorrect: boolean;
+  pointsEarned?: number;         
+  textAnswer?: string;
 }
 
 export type GameStatus = 'idle' | 'playing' | 'paused' | 'finished';
