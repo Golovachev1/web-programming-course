@@ -1,44 +1,28 @@
-import { Question } from '../types/quiz';
+import { LocalQuestion } from '../stores/gameStore';
 
-export const mockQuestions: Question[] = [
+export const mockQuestions: LocalQuestion[] = [
   {
-    id: 1,
-    question: "Что выведет console.log(typeof null)?",
-    options: ["null", "undefined", "object", "number"],
-    correctAnswer: 2,
-    difficulty: "easy"
+    id: '1',
+    question: 'Какие из этих языков являются языками программирования?',
+    options: ['JavaScript', 'HTML', 'CSS', 'Python'],
+    correctAnswers: [0, 3], // JavaScript и Python
+    difficulty: 'easy',
+    type: "multiple-select"
   },
   {
-    id: 2,
-    question: "Какой метод НЕ изменяет исходный массив?",
-    options: ["push()", "pop()", "map()", "sort()"],
-    correctAnswer: 2,
-    difficulty: "medium"
+    id: '2',
+    question: 'Какие теги являются блочными в HTML?',
+    options: ['<div>', '<span>', '<p>', '<a>'],
+    correctAnswers: [0, 2], // div и p
+    difficulty: 'medium',
+    type: "multiple-select"
   },
   {
-    id: 3,
-    question: "Что такое замыкание (closure)?",
-    options: [
-      "Функция внутри функции",
-      "Функция с доступом к внешним переменным",
-      "Закрытая функция",
-      "Анонимная функция"
-    ],
-    correctAnswer: 1,
-    difficulty: "hard"
-  },
-  {
-    id: 4,
-    question: "Чему равно '2' + 2?",
-    options: ["'22'", "4", "NaN", "Error"],
-    correctAnswer: 0,
-    difficulty: "easy"
-  },
-  {
-    id: 5,
-    question: "Что выведет console.log([] == ![])?",
-    options: ["true", "false", "undefined", "Error"],
-    correctAnswer: 0,
-    difficulty: "hard"
+    id: '3',
+    question: 'Какие методы массива изменяют исходный массив?',
+    options: ['map()', 'push()', 'filter()', 'splice()'],
+    correctAnswers: [1, 3], // push и splice
+    difficulty: 'hard',
+    type: "multiple-select"
   }
 ];

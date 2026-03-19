@@ -1,29 +1,30 @@
-interface QuizButtonProps {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  variant?: 'primary' | 'secondary';
-}
+import type { QuizButtonProps } from '../../types/quiz';
 
-export function QuizButton({
-  children,
-  onClick,
-  disabled,
-  variant = 'primary'
-}: QuizButtonProps) {
-  const baseClass = 'px-4 py-2 rounded font-medium transition-colors';
-  const variantClass = variant === 'primary'
-    ? 'bg-blue-500 text-white hover:bg-blue-600'
-    : 'bg-gray-200 text-gray-800 hover:bg-gray-300';
-  const disabledClass = disabled ? 'opacity-50 cursor-not-allowed' : '';
+export const QuizButton = ({
+    children,
+    onClick,
+    disabled = false,
+    variant = 'primary',
+    theme = 'light'
+}: QuizButtonProps) => {
+    const baseClass = 'w-full py-4 px-6 rounded-xl font-semibold transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100';
 
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseClass} ${variantClass} ${disabledClass}`}
-    >
-      {children}
-    </button>
-  );
-}
+    const variantStyles = {
+        primary: theme === 'light'
+            ? 'bg-purple-600 hover:bg-purple-700 text-white'
+            : 'bg-purple-700 hover:bg-purple-800 text-white',
+        secondary: theme === 'light'
+            ? 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            : 'bg-gray-700 hover:bg-gray-600 text-white'
+    };
+
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className={`${baseClass} ${variantStyles[variant]}`}
+        >
+            {children}
+        </button>
+    );
+};

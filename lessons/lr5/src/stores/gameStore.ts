@@ -1,122 +1,199 @@
-import { makeAutoObservable } from 'mobx';
-import { Question, Answer } from '../types/quiz';
-import { QuestionPreview } from '../../generated/api/quizBattleAPI.schemas';
+import { makeAutoObservable, runInAction } from "mobx";
+import type { QuestionPreview } from "../../generated/api/quizBattleAPI.schemas";
+import { mockQuestions } from "../data/questions";
 
-/**
- * GameStore - MobX Store для управления игровой логикой
- *
- * Используется в Task2 и Task4
- */
-class GameStore {
-  // Observable состояние
-  gameStatus: 'idle' | 'playing' | 'finished' = 'idle';
-  questions: Question[] = [];
+export interface LocalQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswers: number[];
+  difficulty: 'easy' | 'medium' | 'hard';
+  type: string;
+}
+
+export interface LocalAnswer {
+  questionId: string;
+  selectedAnswers: number[];
+  isCorrect: boolean;
+  pointsEarned: number;
+  textAnswer: string;
+}
+
+export class GameStore {
+  gameStatus: "idle" | "playing" | "finished" = "idle";
+  questions: LocalQuestion[] = [];
   currentQuestionIndex = 0;
   score = 0;
   selectedAnswers: number[] = [];
-  answeredQuestions: Answer[] = [];
-  
+  answeredQuestions: LocalAnswer[] = [];
+  answerText: string = "";
 
   constructor() {
     makeAutoObservable(this);
   }
- 
-  essayAnswer: string = '';
-  
-  // Метод для установки текстового ответа
-  setEssayAnswer = (answer: string) => {
-    this.essayAnswer = answer;
-  };
-  // Actions - методы для изменения состояния
 
-  startGame(questions: QuestionPreview[]) {
-    this.gameStatus = 'playing';
-    this.questions = questions.map(item => ({...item, correctAnswer: -1, options: item.options ?? []}));
+  setQuestionsFromAPI(questions: QuestionPreview[]) {
+
+    this.questions = questions.map(q => ({
+      id: q.id,
+      question: q.question,
+      options: q.options || [], 
+      correctAnswers: [],
+      difficulty: q.difficulty,
+      type: q.type
+    }));
+
+    console.log('All questions loaded:', {
+      total: questions.length,
+      multipleSelect: questions.filter(q => q.type === 'multiple-select').length,
+      essay: questions.filter(q => q.type === 'essay').length
+    });
+
     this.currentQuestionIndex = 0;
-    this.score = 0;
     this.selectedAnswers = [];
     this.answeredQuestions = [];
+    this.score = 0;
   }
 
-  selectAnswer(answerIndex: number) {
-    // Проверяем, что ответ еще не был выбран и игра идет
-    if (this.gameStatus !== 'playing') {
+  startGame() {
+    this.gameStatus = "playing";
+    if (this.questions.length === 0) {
+      this.questions = mockQuestions.map(q => ({
+        ...q,
+        type: 'multiple-select'
+      }));
+    }
+    this.currentQuestionIndex = 0;
+    this.selectedAnswers = [];
+    this.answeredQuestions = [];
+    this.score = 0;
+  }
+
+  toggleAnswer(index: number) {
+    if (this.gameStatus !== "playing") return;
+
+    // ДОБАВЛЯЕМ проверку типа вопроса
+    if (this.currentQuestion?.type !== 'multiple-select') {
+      console.log('Toggle answer available only for multiple-select questions');
       return;
     }
 
-     // Проверяем, выбран ли уже этот ответ
-     if (this.selectedAnswers.includes(answerIndex)) {
-      // Ответ уже выбран - удаляем из массива
-      this.selectedAnswers = this.selectedAnswers.filter(
-          selectedIndex => selectedIndex !== answerIndex
-      );
+    if (this.selectedAnswers.includes(index)) {
+      this.selectedAnswers = this.selectedAnswers.filter(i => i !== index);
     } else {
-      // Ответ еще не выбран - добавляем в массив
-      this.selectedAnswers.push(answerIndex);
+      this.selectedAnswers = [...this.selectedAnswers, index];
     }
-  
-    const currentQuestion = this.currentQuestion;
-    if (!currentQuestion) return;
+  }
 
-    // Проверяем правильность ответа
-    const isCorrect = answerIndex === currentQuestion.correctAnswer;
-    
-    if (isCorrect) {
-      this.score += this.getPointsForDifficulty(currentQuestion.difficulty);
+  setText(text: string) {
+    this.answerText = text;
+  }
+
+  saveCurrentAnswer() {
+    const question = this.currentQuestion;
+    if (!question) return;
+
+
+    if (question.type === 'multiple-select') {
+      if (this.selectedAnswers.length === 0) return;
+
+      this.answeredQuestions = this.answeredQuestions.filter(
+        a => a.questionId !== question.id
+      );
+
+      this.answeredQuestions.push({
+        questionId: question.id,
+        selectedAnswers: [...this.selectedAnswers],
+        isCorrect: false,
+        pointsEarned: 0,
+        textAnswer: ""
+      });
+    } else if (question.type === 'essay') {
+      
+      this.answeredQuestions = this.answeredQuestions.filter(
+        a => a.questionId !== question.id
+      );
+
+      this.answeredQuestions.push({
+        questionId: question.id,
+        textAnswer: this.answerText, 
+        isCorrect: false,
+        pointsEarned: 0,
+        selectedAnswers: []
+      });
     }
+  }
 
-    // Сохраняем в историю ответов
-    this.answeredQuestions.push({
-      questionId: currentQuestion.id,
-      selectedAnswers: [...this.selectedAnswers],
-      isCorrect: isCorrect
+  forceSaveCurrentAnswer() {
+    const question = this.currentQuestion;
+    if (!question) return;
+
+    const alreadyAnswered = this.answeredQuestions.some(a => a.questionId === question.id);
+    if (!alreadyAnswered) {
+      this.saveCurrentAnswer();
+    }
+  }
+
+  updateAnswerResult(questionId: string, isCorrect: boolean, pointsEarned: number) {
+    const answerIndex = this.answeredQuestions.findIndex(a => a.questionId === questionId);
+    if (answerIndex !== -1) {
+      this.answeredQuestions[answerIndex].isCorrect = isCorrect;
+      this.answeredQuestions[answerIndex].pointsEarned = pointsEarned;
+
+      if (isCorrect) {
+        this.score += pointsEarned;
+      }
+    }
+  }
+
+  updateAnswerStatusFromServer(questionId: string, isCorrect: boolean, pointsEarned: number) {
+    runInAction(() => {
+      const answerIndex = this.answeredQuestions.findIndex(a => a.questionId === questionId);
+      if (answerIndex !== -1) {
+        this.answeredQuestions[answerIndex].isCorrect = isCorrect;
+        this.answeredQuestions[answerIndex].pointsEarned = pointsEarned;
+      }
+    });
+  }
+
+  updateScoreFromServer(newScore: number) {
+    runInAction(() => {
+      this.score = newScore;
     });
   }
 
   nextQuestion() {
-    if (this.isLastQuestion) {
-      return false;
+    if (this.currentQuestionIndex < this.questions.length - 1) {
+      this.currentQuestionIndex++;
+      this.selectedAnswers = [];
+      this.answerText = "";
+    } else {
+      this.finishGame();
     }
-
-    this.currentQuestionIndex++;
-    this.selectedAnswers = [];
-    this.essayAnswer = '';
-    return true;
   }
 
   finishGame() {
-    this.gameStatus = 'finished';
+    this.gameStatus = "finished";
   }
 
   resetGame() {
-    this.gameStatus = 'idle';
+    this.gameStatus = "idle";
     this.questions = [];
     this.currentQuestionIndex = 0;
     this.score = 0;
     this.selectedAnswers = [];
     this.answeredQuestions = [];
-    this.essayAnswer = '';
   }
 
-  // Вспомогательный метод для получения очков за сложность
-  private getPointsForDifficulty(difficulty: string): number {
-    switch (difficulty) {
-      case 'easy': return 10;
-      case 'medium': return 20;
-      case 'hard': return 30;
-      default: return 10;
-    }
-  }
 
-  // Computed values - вычисляемые значения
-
-  get currentQuestion(): Question | null {
+  get currentQuestion(): LocalQuestion | null {
     return this.questions[this.currentQuestionIndex] || null;
   }
 
   get progress(): number {
-    if (this.questions.length === 0) return 0;
-    return ((this.currentQuestionIndex + 1) / this.questions.length) * 100;
+    return this.questions.length
+      ? ((this.currentQuestionIndex + 1) / this.questions.length) * 100
+      : 0;
   }
 
   get isLastQuestion(): boolean {
@@ -124,9 +201,18 @@ class GameStore {
   }
 
   get correctAnswersCount(): number {
-    return this.answeredQuestions.filter(answer => answer.isCorrect).length;
+    return this.answeredQuestions.filter(a => a.isCorrect).length;
   }
 
+  get isAnswerSelected(): boolean {
+    if (this.currentQuestion?.type === 'multiple-select') {
+      return this.selectedAnswers.length > 0;
+    } else if (this.currentQuestion?.type === 'essay') {
+      return true; 
+    }
+    return false;
+  }
 }
+
 
 export const gameStore = new GameStore();
