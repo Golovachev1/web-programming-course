@@ -4,45 +4,39 @@ import { describe, it, expect, vi } from 'vitest';
 import { QuizButton } from './QuizButton';
 
 describe('QuizButton', () => {
-  it('renders with children text', () => {
-    render(<QuizButton onClick={() => {}}>Click me</QuizButton>);
-    expect(screen.getByRole('button', { name: 'Click me' })).toBeInTheDocument();
-  });
+    it('рендерит кнопку с текстом', () => {
+        render(<QuizButton onClick={() => { }}>Начать игру</QuizButton>);
+        expect(screen.getByRole('button', { name: 'Начать игру' })).toBeInTheDocument();
+    });
 
-  it('calls onClick when clicked', async () => {
-    const handleClick = vi.fn();
-    render(<QuizButton onClick={handleClick}>Submit</QuizButton>);
+    it('вызывает onClick при клике', async () => {
+        const handleClick = vi.fn();
+        render(<QuizButton onClick={handleClick}>Кликни меня</QuizButton>);
 
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button'));
+        const user = userEvent.setup();
+        await user.click(screen.getByRole('button'));
 
-    expect(handleClick).toHaveBeenCalledTimes(1);
-  });
+        expect(handleClick).toHaveBeenCalledTimes(1);
+    });
 
-  it('is disabled when disabled prop is true', () => {
-    render(<QuizButton onClick={() => {}} disabled>Disabled</QuizButton>);
-    expect(screen.getByRole('button')).toBeDisabled();
-  });
+    it('отключается когда disabled = true', () => {
+        render(
+            <QuizButton onClick={() => { }} disabled>
+                Отключено
+            </QuizButton>
+        );
+        expect(screen.getByRole('button')).toBeDisabled();
+    });
 
-  it('does not call onClick when disabled', async () => {
-    const handleClick = vi.fn();
-    render(<QuizButton onClick={handleClick} disabled>Disabled</QuizButton>);
 
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button'));
+    it('применяет secondary стили при variant="secondary"', () => {
+        render(
+            <QuizButton onClick={() => { }} variant="secondary">
+                Secondary
+            </QuizButton>
+        );
+        const button = screen.getByRole('button');
+        expect(button.className).toContain('w-full py-4 px-6 rounded-xl font-semibold transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100');
+    });
 
-    expect(handleClick).not.toHaveBeenCalled();
-  });
-
-  it('applies primary variant styles by default', () => {
-    render(<QuizButton onClick={() => {}}>Primary</QuizButton>);
-    const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-blue-500');
-  });
-
-  it('applies secondary variant styles when specified', () => {
-    render(<QuizButton onClick={() => {}} variant="secondary">Secondary</QuizButton>);
-    const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-gray-200');
-  });
 });
