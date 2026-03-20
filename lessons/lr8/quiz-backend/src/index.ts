@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 
@@ -8,10 +7,9 @@ app.get('/', (c) => {
   return c.text('Hello Hono!')
 })
 
-app.get('/health', async (c) => {
+app.get('/health', (c) => {
   return c.json({ status: 'ok' })
-});
-
+})
 
 serve({
   fetch: app.fetch,
