@@ -56,9 +56,17 @@ auth.post('/github/callback', async (c) => {
 
   return c.json({
     token,
-    user
+    user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        githubId: user.githubId,
+        createdAt: user.createdAt,
+    },
   })
 })
+
+
 
 // 🔹 Маршрут /me для получения текущего пользователя по токену
 auth.get('/me', async (c) => {
