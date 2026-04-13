@@ -66,8 +66,6 @@ auth.post('/github/callback', async (c) => {
   })
 })
 
-
-
 // 🔹 Маршрут /me для получения текущего пользователя по токену
 auth.get('/me', async (c) => {
   const authHeader = c.req.header('Authorization') // Hono использует .header()
