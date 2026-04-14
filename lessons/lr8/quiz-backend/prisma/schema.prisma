@@ -73,5 +73,6 @@ model Answer {
 
   @@unique([sessionId, questionId])
   @@index([sessionId])
+  @@index([sessionId, score(sort: Desc)])
   @@index([questionId])
 }
